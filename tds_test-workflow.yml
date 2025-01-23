@@ -1,0 +1,22 @@
+name: TDS Workflow (Test)
+
+# This workflow will run every time there is a push to the main branch 
+# or a pull request opened/updated against main.
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Check out the repository code
+      - name: Check out repository
+        uses: actions/checkout@v2
+
+      # Step 2: Use your email address as the step name
+      - name: 22f30001642@ds.study.iitm.ac.in
+        run: echo "Hello, world!"
