@@ -1,44 +1,32 @@
 import json
-import os
+from urllib.parse import urlparse, parse_qs
+from http.server import BaseHTTPRequestHandler
 
-def handler(event, context):
-    # Get the absolute path of the JSON file
-    file_path = os.path.join(os.path.dirname(__file__), "q-vercel-python.json")
-
-    try:
-        # Load JSON data from the file
-        with open(file_path, "r") as file:
-            data = json.load(file)
+class handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        # Enable CORS
+        self.send_response(200)
+        self.send_header('Content-type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')  # Allow any origin
+        self.end_headers()
 
         # Parse query parameters
-        query_params = event.get("queryStringParameters", {})
-        names = query_params.get("name")
-        
-        # Handle single or multiple names
-        if isinstance(names, str):
-            names = [names]
-        elif not names:
-            names = []
+        query = parse_qs(urlparse(self.path).query)
+        names = query.get('name', [])
 
-        # Find marks for the specified names
-        marks = [entry["marks"] for entry in data if entry["name"] in names]
+        # Load data from the JSON file
+        with open('q-vercel-python.json', 'r') as f:
+            data = json.load(f)
 
-        # Return the response as JSON
-        return {
-            "statusCode": 200,
-            "headers": {
-                "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "*"  # Enable CORS
-            },
-            "body": json.dumps({"marks": marks})
-        }
-    except Exception as e:
-        # Handle errors gracefully and return a 500 response
-        return {
-            "statusCode": 500,
-            "headers": {
-                "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "*"
-            },
-            "body": json.dumps({"error": str(e)})
-        }
+        # Build the result array of marks
+        marks_list = []
+        for name in names:
+            item = next((i for i in data if i["name"] == name), None)
+            if item:
+                marks_list.append(item["marks"])
+            else:
+                marks_list.append(None)
+
+        # Return the JSON response
+        response = {"marks": marks_list}
+        self.wfile.write(json.dumps(response).encode())
