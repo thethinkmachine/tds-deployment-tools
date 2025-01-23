@@ -1,25 +1,29 @@
 import json
-from flask import Flask, request, jsonify
-from flask_cors import CORS
 
-app = Flask(__name__)
-CORS(app)  # Enable CORS to allow GET requests from any origin
+def handler(event, context):
+    # Load JSON data from the file
+    with open("q-vercel-python.json", "r") as file:
+        data = json.load(file)
 
-# Load data from the JSON file
-with open("q-vercel-python.json", "r") as file:
-    data = json.load(file)
-
-@app.route('/api', methods=['GET'])
-def get_marks():
-    # Get 'name' parameters from the query string
-    names = request.args.getlist('name')
+    # Parse query parameters
+    query_params = event.get("queryStringParameters", {})
+    names = query_params.get("name")
     
+    # Handle single or multiple names
+    if isinstance(names, str):
+        names = [names]
+    elif not names:
+        names = []
+
     # Find marks for the specified names
-    marks = [entry['marks'] for entry in data if entry['name'] in names]
-    
-    # Return the result as JSON
-    return jsonify({"marks": marks})
+    marks = [entry["marks"] for entry in data if entry["name"] in names]
 
-# Vercel requires this for deployment
-def handler(request, *args, **kwargs):
-    return app(request, *args, **kwargs)
+    # Return the response as JSON
+    return {
+        "statusCode": 200,
+        "headers": {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*"  # Enable CORS
+        },
+        "body": json.dumps({"marks": marks})
+    }
